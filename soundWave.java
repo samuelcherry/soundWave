@@ -5,10 +5,117 @@ import java.awt.event.ActionEvent;
 
 public class soundWave {
 
-    public static WaveSettings settings = new WaveSettings();
+    public static class Channel {
+        private final WaveformPanel waveformPanel;
+        private final short[] slidingBuffer;
+        private final int bufferSize;
+        private boolean enabled;
+        
+        private volatile boolean playing = false;
+        private Thread audioThread;
 
-    private static volatile boolean playing = false;
+        public Channel(WaveformPanel panel){
+            this.panel = panel;
+            this.settings = new WaveSettings();
+        }
 
+        Channel[] channels = new Channel[2];
+        channels[0] = new Channel(waveformPanels[0]);
+        channels[1] = new Channel(waveformPanels[1]);
+
+        public WaveSettings getSettings() {
+            return settings;
+        }
+
+        public WaveformPanel getPanel() {
+            return panel;
+        }
+
+        public void start() {
+            if (playing) return;
+            playing = true;
+
+            audioThread = new Thread(() -> runAudio());
+            audioThread.start();
+        }
+
+        public void stop() {
+            playing = false;
+        }
+
+        public void runAudio() {
+            try {
+                float sampleRate = 44100;
+                int chunkMs = 50;
+                int chunkSize = (int)(sampleRate * chunkMs / 1000);
+
+                AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
+                SourceDataLine line = AudioSystem.getSourceDataLine(format);
+                line.open(format);
+                line.start();
+
+                int displaySeconds = 15;
+                byte[] slidingBuffer = new byte[(int) (sampleRate * displaySeconds)];
+
+                int i = 0;
+                while (playing) {
+                byte[] buffer = new byte[chunkSize];
+
+                WaveSettings.WaveShape shape = settings.getShape();
+                double amplitude = settings.getAmplitude();
+                double frequency = settings.getFrequency();
+                double duty = settings.getPulseDuty();
+
+                    for (int j = 0; j < chunkSize; j++, i++) {
+                        double angle = 2.0 * Math.PI * i * frequency / sampleRate;
+                        byte sample;
+
+                        switch (shape) {
+
+                            case SQUARE:
+                                sample = (byte)((Math.sin(angle) >= 0 ? 127:-128) * amplitude);
+                                break;
+  
+
+                            case SAW:
+                                double saw = 2.0 * (angle / (2 * Math.PI) - 
+                                Math.floor(0.5 + angle / (2 * Math.PI)));
+                                sample = (byte)(saw * 127 * amplitude);
+                                break;
+
+                            case PULSE:
+                                double phase = (angle / (2 * Math.PI)) % 1.0;
+                                sample = (byte)((phase < duty ? 127 : -128) * amplitude);
+                                break;
+
+                            case NOISE:
+                                sample = (byte)((Math.random() * 255 - 128) * amplitude);
+                                break;
+                                    
+                            default:
+                                sample = 0;
+                        }
+
+                        buffer[j] = sample;
+                        slidingBuffer[i % slidingBuffer.length] = sample;
+                    }
+
+                    panel.setSamples(slidingBuffer);
+                    panel.repaint();
+
+                    line.write(buffer , 0, buffer.length);
+                }
+
+                line.drain();
+                line.stop();
+                line.close();
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+    
     public static class WaveSettings {
         public enum WaveShape {SQUARE, SAW, PULSE, NOISE}
 
@@ -33,37 +140,55 @@ public class soundWave {
         public double getPulseDuty() {return pulseDuty;}
         public void setPulseDuty(double d) {pulseDuty = Math.max(0.01, Math.min(0.99, d));}
     }
-
     public static void main(String[] args) throws Exception {
 
 
-
+        int activeChannel = 0;
 
         JFrame frame = new JFrame("Waveform Viewer");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(800,300);
         frame.setLayout(new BorderLayout());
 
-        //Channels
+        //Channel container
 
         ChannelPanel channelPanel = new ChannelPanel();
-        channelPanel.setPreferredSize(new Dimension(frame.getWidth(), 150));
-        channelPanel.setLayout(new BorderLayout());
-        channelPanel.setSize(450, 150);
+        channelPanel.setLayout(new BoxLayout(channelPanel, BoxLayout.Y_AXIS));
+        channelPanel.setPreferredSize(new Dimension(750,300));
 
-        JPanel channelSelectPanel = new JPanel();
-        JButton channelButton = new JButton("1");
+        //Channel 1
+        JPanel channel1 = new JPanel();
+        channel1.setPreferredSize(new Dimension(750,150));
 
-        WaveformPanel waveformPanel = new WaveformPanel(new byte[0]);
-        waveformPanel.setSize(400, 400);
+        JPanel channelSelectPanel1 = new JPanel();
+        JButton channelButton1 = new JButton("1");
+        channelButton1.addActionListener(e -> activeChannel = 0);
+        waveformPanels[0].setPreferredSize(new Dimension(725,150));
 
-        channelPanel.add(channelSelectPanel, BorderLayout.LINE_START);
-        channelPanel.add(waveformPanel, BorderLayout.CENTER);
-        channelSelectPanel.add(channelButton);
+        //Channel 2
+
+        JPanel channel2 = new JPanel();
+        channel2.setPreferredSize(new Dimension(750,150));
+
+        JPanel channelSelectPanel2 = new JPanel();
+        JButton channelButton2 = new JButton("2");
+        channelButton2.addActionListener(e -> activeChannel = 1);
+        waveformPanels[1].setPreferredSize(new Dimension(725,150));
+
+        //Adding channels to channel panel
+
+        channel1.add(channelSelectPanel1, BorderLayout.LINE_START);
+        channel1.add(waveformPanels[0], BorderLayout.CENTER);
+        channelSelectPanel1.add(channelButton1, BorderLayout.NORTH);
+        channelPanel.add(channel1, BorderLayout.NORTH);
+
+        channel2.add(channelSelectPanel2, BorderLayout.LINE_START);
+        channel2.add(waveformPanels[1], BorderLayout.CENTER);
+        channelSelectPanel2.add(channelButton2, BorderLayout.SOUTH);
+        channelPanel.add(channel2, BorderLayout.SOUTH);
 
         frame.add(channelPanel);
 
-    
         //Button Section
 
         JPanel controlContainer = new JPanel();
@@ -113,129 +238,55 @@ public class soundWave {
         controlContainer.add(buttonPanel, BorderLayout.SOUTH);
 
         //Button functions
-        stopButton.addActionListener((ActionEvent e) -> {
-            playing = false;
-        });
+
+        playButton.addActionListener(e -> 
+            channels[activeChannel].start()
+        );
+
+        stopButton.addActionListener(e ->
+            channels[activeChannel].stop()
+        );
         
         squareWaveButton.addActionListener( e -> 
-            settings.setShape(WaveSettings.WaveShape.SQUARE)
+            channels[activeChannel].getSettings().setShape(WaveSettings.WaveShape.SQUARE)
         );
 
         pulseWaveButton.addActionListener( e -> 
-            settings.setShape(WaveSettings.WaveShape.PULSE)
+            channels[activeChannel].getSettings().setShape(WaveSettings.WaveShape.PULSE)
+        
         );
 
         sawWaveButton.addActionListener( e -> 
-            settings.setShape(WaveSettings.WaveShape.SAW)
+            channels[activeChannel].getSettings().setShape(WaveSettings.WaveShape.SAW)
         );
 
         noiseWaveButton.addActionListener( e -> 
-            settings.setShape(WaveSettings.WaveShape.NOISE)
+            channels[activeChannel].getSettings().setShape(WaveSettings.WaveShape.NOISE)
         );
         freq1Button.addActionListener( e -> 
-            settings.setFrequency(0.5)
+            channels[activeChannel].getSettings().setFrequency(0.5)
         );
 
         freq2Button.addActionListener( e -> 
-            settings.setFrequency(1)
+            channels[activeChannel].getSettings().setFrequency(1)
         );
 
         freq3Button.addActionListener( e -> 
-            settings.setFrequency(2)
+            channels[activeChannel].getSettings().setFrequency(2)
         );
 
         amp1Button.addActionListener( e -> 
-            settings.setAmplitude(0)
+            channels[activeChannel].getSettings().setAmplitude(0)
         );
 
         amp2Button.addActionListener( e -> 
-            settings.setAmplitude(0.5)
+            channels[activeChannel].getSettings().setAmplitude(0.5)
         );
 
         amp3Button.addActionListener( e -> 
-            settings.setAmplitude(1)
+            channels[activeChannel].getSettings().setAmplitude(1)
         );
 
-
-        playButton.addActionListener((ActionEvent e) -> {
-
-            if (playing) return;
-            playing = true;
-
-            new Thread(() -> {
-                try {
-                    float sampleRate = 44100;
-                    int chunkMs = 50;
-                    int chunkSize = (int)(sampleRate * chunkMs / 1000);
-
-                    AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
-                    SourceDataLine line = AudioSystem.getSourceDataLine(format);
-                    line.open(format);
-                    line.start();
-
-                    int displaySeconds = 15;
-                    byte[] slidingBuffer = new byte[(int) (sampleRate * displaySeconds)];
-
-                    int i = 0;
-                    while (playing) {
-                        byte[] buffer = new byte[chunkSize];
-
-                        WaveSettings.WaveShape shape = settings.getShape();
-                        double amplitude = settings.getAmplitude();
-                        double frequency = settings.getFrequency();
-                        double duty = settings.getPulseDuty();
-
-                        for (int j = 0; j < chunkSize; j++, i++) {
-                            double angle = 2.0 * Math.PI * i * frequency / sampleRate;
-                            byte sample;
-
-                            switch (shape) {
-
-                                case SQUARE:
-                                    sample = (byte)((Math.sin(angle) >= 0 ? 127:-128) * amplitude);
-                                    break;
-  
-
-                                case SAW:
-                                    double saw = 2.0 * (angle / (2 * Math.PI) - 
-                                    Math.floor(0.5 + angle / (2 * Math.PI)));
-                                    sample = (byte)(saw * 127 * amplitude);
-                                    break;
-
-                                case PULSE:
-                                    double phase = (angle / (2 * Math.PI)) % 1.0;
-                                    sample = (byte)((phase < duty ? 127 : -128) * amplitude);
-                                    break;
-
-                                case NOISE:
-                                    sample = (byte)((Math.random() * 255 - 128) * amplitude);
-                                    break;
-                                    
-                                default:
-                                    sample = 0;
-                            }
-
-                            buffer[j] = sample;
-
-                            int pos = i % slidingBuffer.length;
-                            slidingBuffer[pos] = sample;
-                        }
-
-                        waveformPanel.setSamples(slidingBuffer);
-                        waveformPanel.repaint();
-
-                        line.write(buffer , 0, buffer.length);
-                    }
-
-                    line.drain();
-                    line.stop();
-                    line.close();
-
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }).start();
-        });
 
         frame.setVisible(true);
     }
