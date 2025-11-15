@@ -5,59 +5,157 @@ import java.awt.event.ActionEvent;
 
 public class soundWave {
 
+    public static WaveSettings settings = new WaveSettings();
+
     private static volatile boolean playing = false;
+
+    public static class WaveSettings {
+        public enum WaveShape {SQUARE, SAW, PULSE, NOISE}
+
+        private double frequency = 1.0;
+        private double amplitude = 1.0;
+        private double volume = 1.0;
+        private WaveShape shape = WaveShape.SQUARE;
+        private double pulseDuty = 0.25;
+
+        public double getFrequency() { return frequency; }
+        public void setFrequency(double f) {frequency = f; }
+
+        public double getAmplitude() { return amplitude; }
+        public void setAmplitude(double a) {amplitude = a; }
+
+        public double getVolume() { return volume; }
+        public void setVolume(double v) {volume = v; }
+
+        public WaveShape getShape() { return shape; }
+        public void setShape(WaveShape s) {shape = s; }
+
+        public double getPulseDuty() {return pulseDuty;}
+        public void setPulseDuty(double d) {pulseDuty = Math.max(0.01, Math.min(0.99, d));}
+    }
+
     public static void main(String[] args) throws Exception {
+
+
+
 
         JFrame frame = new JFrame("Waveform Viewer");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800,600);
+        frame.setSize(800,300);
         frame.setLayout(new BorderLayout());
 
-        JPanel channelPanel = new JPanel();
+        //Channels
+
+        ChannelPanel channelPanel = new ChannelPanel();
         channelPanel.setPreferredSize(new Dimension(frame.getWidth(), 150));
-        frame.add(channelPanel, BorderLayout.NORTH);
-
-
-        WaveformPanel waveformPanel = new WaveformPanel(new byte[0]);
-        channelPanel.add(waveformPanel);
+        channelPanel.setLayout(new BorderLayout());
+        channelPanel.setSize(450, 150);
 
         JPanel channelSelectPanel = new JPanel();
-        channelSelectPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 20, 5));
-        channelPanel.add(channelSelectPanel);
-
         JButton channelButton = new JButton("1");
-        channelButton.setFont(new Font("Arial", Font.BOLD, 18));
 
+        WaveformPanel waveformPanel = new WaveformPanel(new byte[0]);
+        waveformPanel.setSize(400, 400);
+
+        channelPanel.add(channelSelectPanel, BorderLayout.LINE_START);
+        channelPanel.add(waveformPanel, BorderLayout.CENTER);
+        channelSelectPanel.add(channelButton);
+
+        frame.add(channelPanel);
+
+    
+        //Button Section
+
+        JPanel controlContainer = new JPanel();
+        controlContainer.setLayout(new BoxLayout(controlContainer, BoxLayout.X_AXIS));
+        controlContainer.setSize(800, 450);;
+        frame.add(controlContainer, BorderLayout.SOUTH);
+
+        //AMP and Freq
+
+        JPanel ampFreqPanel = new JPanel();
+        ampFreqPanel.setLayout(new GridLayout(2, 3, 10, 5));
+        
+        JButton amp3Button = new JButton("100");
+        JButton amp2Button = new JButton("50");
+        JButton amp1Button= new JButton("0");
+        JButton freq3Button = new JButton("2hz");
+        JButton freq2Button = new JButton("1hz");
+        JButton freq1Button= new JButton("0.5hz");
+
+        ampFreqPanel.add(amp3Button);
+        ampFreqPanel.add(amp2Button);
+        ampFreqPanel.add(amp1Button);
+        ampFreqPanel.add(freq3Button);
+        ampFreqPanel.add(freq2Button);
+        ampFreqPanel.add(freq1Button);
+
+        controlContainer.add(ampFreqPanel, BorderLayout.WEST);
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 5));
+        buttonPanel.setLayout(new GridLayout(2,3,10,5));
+
+        //Control buttons
 
         JButton playButton = new JButton("Play");
-        playButton.setFont(new Font("Arial", Font.BOLD, 18));
-
-
         JButton stopButton = new JButton("Stop");
-        stopButton.setFont(new Font("Arial", Font.BOLD, 18));
-
         JButton squareWaveButton = new JButton("Square Wave");
-        squareWaveButton.setFont(new Font("Arial", Font.BOLD, 18));
-
-        JButton sineWaveButton = new JButton("Sine Wave");
-        sineWaveButton.setFont(new Font("Arial", Font.BOLD, 18));
+        JButton pulseWaveButton = new JButton("Pulse Wave");
+        JButton sawWaveButton = new JButton("Saw Wave");
+        JButton noiseWaveButton = new JButton("Noise Wave");
 
         buttonPanel.add(playButton);
         buttonPanel.add(stopButton);
         buttonPanel.add(squareWaveButton);
-        buttonPanel.add(sineWaveButton);
+        buttonPanel.add(pulseWaveButton);
+        buttonPanel.add(sawWaveButton);
+        buttonPanel.add(noiseWaveButton);
 
-        channelSelectPanel.add(channelButton);
+        controlContainer.add(buttonPanel, BorderLayout.SOUTH);
 
-        frame.add(buttonPanel, BorderLayout.SOUTH);
-
-
+        //Button functions
         stopButton.addActionListener((ActionEvent e) -> {
             playing = false;
         });
         
+        squareWaveButton.addActionListener( e -> 
+            settings.setShape(WaveSettings.WaveShape.SQUARE)
+        );
+
+        pulseWaveButton.addActionListener( e -> 
+            settings.setShape(WaveSettings.WaveShape.PULSE)
+        );
+
+        sawWaveButton.addActionListener( e -> 
+            settings.setShape(WaveSettings.WaveShape.SAW)
+        );
+
+        noiseWaveButton.addActionListener( e -> 
+            settings.setShape(WaveSettings.WaveShape.NOISE)
+        );
+        freq1Button.addActionListener( e -> 
+            settings.setFrequency(0.5)
+        );
+
+        freq2Button.addActionListener( e -> 
+            settings.setFrequency(1)
+        );
+
+        freq3Button.addActionListener( e -> 
+            settings.setFrequency(2)
+        );
+
+        amp1Button.addActionListener( e -> 
+            settings.setAmplitude(0)
+        );
+
+        amp2Button.addActionListener( e -> 
+            settings.setAmplitude(0.5)
+        );
+
+        amp3Button.addActionListener( e -> 
+            settings.setAmplitude(1)
+        );
+
 
         playButton.addActionListener((ActionEvent e) -> {
 
@@ -69,9 +167,6 @@ public class soundWave {
                     float sampleRate = 44100;
                     int chunkMs = 50;
                     int chunkSize = (int)(sampleRate * chunkMs / 1000);
-                    int totalWaves = 5;
-                    double durationSeconds = 5.0;
-                    double frequency = totalWaves / durationSeconds;
 
                     AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
                     SourceDataLine line = AudioSystem.getSourceDataLine(format);
@@ -85,9 +180,41 @@ public class soundWave {
                     while (playing) {
                         byte[] buffer = new byte[chunkSize];
 
+                        WaveSettings.WaveShape shape = settings.getShape();
+                        double amplitude = settings.getAmplitude();
+                        double frequency = settings.getFrequency();
+                        double duty = settings.getPulseDuty();
+
                         for (int j = 0; j < chunkSize; j++, i++) {
                             double angle = 2.0 * Math.PI * i * frequency / sampleRate;
-                            byte sample = (byte)(Math.sin(angle) >= 0 ? 127 : -128);
+                            byte sample;
+
+                            switch (shape) {
+
+                                case SQUARE:
+                                    sample = (byte)((Math.sin(angle) >= 0 ? 127:-128) * amplitude);
+                                    break;
+  
+
+                                case SAW:
+                                    double saw = 2.0 * (angle / (2 * Math.PI) - 
+                                    Math.floor(0.5 + angle / (2 * Math.PI)));
+                                    sample = (byte)(saw * 127 * amplitude);
+                                    break;
+
+                                case PULSE:
+                                    double phase = (angle / (2 * Math.PI)) % 1.0;
+                                    sample = (byte)((phase < duty ? 127 : -128) * amplitude);
+                                    break;
+
+                                case NOISE:
+                                    sample = (byte)((Math.random() * 255 - 128) * amplitude);
+                                    break;
+                                    
+                                default:
+                                    sample = 0;
+                            }
+
                             buffer[j] = sample;
 
                             int pos = i % slidingBuffer.length;
@@ -123,6 +250,15 @@ public class soundWave {
         line.stop();
         line.close();
     }
+
+    static class ChannelPanel extends JPanel {
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setColor(Color.CYAN);
+            g2.fillRect(0,0, getWidth(), getHeight());
+        }
+    }
+
 
     static class WaveformPanel extends JPanel {
         private byte[] samples;
