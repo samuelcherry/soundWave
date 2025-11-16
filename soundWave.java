@@ -50,18 +50,33 @@ public class soundWave {
                 byte[] slidingBuffer = new byte[(int) (sampleRate * displaySeconds)];
 
                 int i = 0;
-                while (playing) {
-                byte[] buffer = new byte[chunkSize];
+                boolean beatOn = false;
 
-                WaveSettings.WaveShape shape = settings.getShape();
-                double amplitude = settings.getAmplitude();
-                double frequency = settings.getFrequency();
-                double duty = settings.getPulseDuty();
+                while (playing) {
+                    byte[] buffer = new byte[chunkSize];
+
+                    WaveSettings.WaveShape shape = settings.getShape();
+                    double amplitude = settings.getAmplitude();
+                    double frequency = settings.getFrequency();
+                    double duty = settings.getPulseDuty();
+
+                    double bpm = settings.getBPM();
+                    int beatCounter = 0;
+                    int beatLengthSamples = (int)(sampleRate * 0.1);
+                    int samplesPerBeat = (int)(sampleRate * (60/bpm));
 
                     for (int j = 0; j < chunkSize; j++, i++) {
-                        double angle = 2.0 * Math.PI * i * frequency / sampleRate;
-                        byte sample;
 
+                        if ((i % samplesPerBeat) < beatLengthSamples){
+                            beatOn = true;
+                        } else {
+                            beatOn = false;
+                        }
+   
+                        double angle = 2.0 * Math.PI * i * frequency / sampleRate;
+                        byte sample = 0;
+
+                        if (beatOn) {
                         switch (shape) {
 
                             case SQUARE:
@@ -87,9 +102,16 @@ public class soundWave {
                             default:
                                 sample = 0;
                         }
+                    }
 
                         buffer[j] = sample;
                         slidingBuffer[i % slidingBuffer.length] = sample;
+                    
+                        beatCounter++;
+                        if (beatCounter >= samplesPerBeat){
+                            beatCounter = 0;
+                        }
+                    
                     }
 
                     panel.setSamples(slidingBuffer);
@@ -116,6 +138,7 @@ public class soundWave {
             private double volume = 1.0;
             private WaveShape shape = WaveShape.SQUARE;
             private double pulseDuty = 0.25;
+            private int bpm = 120;
 
             public double getFrequency() { return frequency; }
             public void setFrequency(double f) {frequency = f; }
@@ -131,6 +154,11 @@ public class soundWave {
 
             public double getPulseDuty() {return pulseDuty;}
             public void setPulseDuty(double d) {pulseDuty = Math.max(0.01, Math.min(0.99, d));}
+        
+            public double getBPM() {return bpm;}
+            public void setBPM(int b) {bpm = b;}
+
+
         }
 
     static class ChannelPanel extends JPanel {
@@ -245,7 +273,7 @@ public class soundWave {
         channel4.setPreferredSize(new Dimension(750,150));
 
         JPanel channelSelectPanel4 = new JPanel();
-        JButton channelButton4 = new JButton("2");
+        JButton channelButton4 = new JButton("4");
         channelButton4.addActionListener(e -> activeChannel[0] = 3);
         waveformPanels[3].setPreferredSize(new Dimension(725,150));
 
@@ -283,7 +311,7 @@ public class soundWave {
         //AMP and Freq
 
         JPanel ampFreqPanel = new JPanel();
-        ampFreqPanel.setLayout(new GridLayout(2, 3, 10, 5));
+        ampFreqPanel.setLayout(new GridLayout(3, 3, 10, 5));
         
         JButton amp3Button = new JButton("100");
         JButton amp2Button = new JButton("50");
@@ -291,6 +319,9 @@ public class soundWave {
         JButton freq3Button = new JButton("2hz");
         JButton freq2Button = new JButton("1hz");
         JButton freq1Button= new JButton("0.5hz");
+        JButton bpm1Button = new JButton("40hz");
+        JButton bpm2Button = new JButton("60hz");
+        JButton bpm3Button = new JButton("200hz");
 
         ampFreqPanel.add(amp3Button);
         ampFreqPanel.add(amp2Button);
@@ -298,11 +329,14 @@ public class soundWave {
         ampFreqPanel.add(freq3Button);
         ampFreqPanel.add(freq2Button);
         ampFreqPanel.add(freq1Button);
+        ampFreqPanel.add(bpm1Button);
+        ampFreqPanel.add(bpm2Button);
+        ampFreqPanel.add(bpm3Button);
 
         controlContainer.add(ampFreqPanel);
 
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new GridLayout(2,3,10,5));
+        buttonPanel.setLayout(new GridLayout(3,3,10,5));
 
         //Control buttons
 
@@ -311,7 +345,10 @@ public class soundWave {
         JButton squareWaveButton = new JButton("Square Wave");
         JButton pulseWaveButton = new JButton("Pulse Wave");
         JButton sawWaveButton = new JButton("Saw Wave");
-        JButton noiseWaveButton = new JButton("Noise Wave");
+        JButton noiseWaveButton = new JButton("Loop");
+        JButton bpm4Button = new JButton("120bpm");
+        JButton bpm5Button = new JButton("60bpm");
+        JButton bpm6Button = new JButton("180bpm");
 
         buttonPanel.add(playButton);
         buttonPanel.add(stopButton);
@@ -319,6 +356,9 @@ public class soundWave {
         buttonPanel.add(pulseWaveButton);
         buttonPanel.add(sawWaveButton);
         buttonPanel.add(noiseWaveButton);
+        buttonPanel.add(bpm4Button);
+        buttonPanel.add(bpm5Button);
+        buttonPanel.add(bpm6Button);
 
         controlContainer.add(buttonPanel, BorderLayout.SOUTH);
 
@@ -370,6 +410,30 @@ public class soundWave {
 
         amp3Button.addActionListener( e -> 
             channels[activeChannel[0]].getSettings().setAmplitude(1)
+        );
+
+        bpm1Button.addActionListener(e ->
+            channels[activeChannel[0]].getSettings().setFrequency(40)
+        );
+
+        bpm2Button.addActionListener(e ->
+            channels[activeChannel[0]].getSettings().setFrequency(60)
+        );
+
+        bpm3Button.addActionListener(e ->
+            channels[activeChannel[0]].getSettings().setFrequency(200)
+        );
+
+        bpm4Button.addActionListener(e ->
+            channels[activeChannel[0]].getSettings().setBPM(120)
+        );
+
+        bpm5Button.addActionListener(e ->
+            channels[activeChannel[0]].getSettings().setBPM(60)
+        );
+
+        bpm6Button.addActionListener(e ->
+            channels[activeChannel[0]].getSettings().setBPM(180)
         );
 
         frame.setVisible(true);
