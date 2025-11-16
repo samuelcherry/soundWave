@@ -1,16 +1,12 @@
 import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 
 public class soundWave {
 
     public static class Channel {
-        private final WaveformPanel waveformPanel;
-        private final short[] slidingBuffer;
-        private final int bufferSize;
-        private boolean enabled;
-        
+        private final WaveformPanel panel;
+        private final WaveSettings settings;
         private volatile boolean playing = false;
         private Thread audioThread;
 
@@ -18,10 +14,6 @@ public class soundWave {
             this.panel = panel;
             this.settings = new WaveSettings();
         }
-
-        Channel[] channels = new Channel[2];
-        channels[0] = new Channel(waveformPanels[0]);
-        channels[1] = new Channel(waveformPanels[1]);
 
         public WaveSettings getSettings() {
             return settings;
@@ -34,7 +26,6 @@ public class soundWave {
         public void start() {
             if (playing) return;
             playing = true;
-
             audioThread = new Thread(() -> runAudio());
             audioThread.start();
         }
@@ -115,35 +106,94 @@ public class soundWave {
             }
         }
     }
-    
-    public static class WaveSettings {
-        public enum WaveShape {SQUARE, SAW, PULSE, NOISE}
 
-        private double frequency = 1.0;
-        private double amplitude = 1.0;
-        private double volume = 1.0;
-        private WaveShape shape = WaveShape.SQUARE;
-        private double pulseDuty = 0.25;
+    public static final class WaveSettings {
+            enum WaveShape {SQUARE, SAW, PULSE, NOISE}
 
-        public double getFrequency() { return frequency; }
-        public void setFrequency(double f) {frequency = f; }
+            private double frequency = 1.0;
+            private double amplitude = 1.0;
+            private double volume = 1.0;
+            private WaveShape shape = WaveShape.SQUARE;
+            private double pulseDuty = 0.25;
 
-        public double getAmplitude() { return amplitude; }
-        public void setAmplitude(double a) {amplitude = a; }
+            public double getFrequency() { return frequency; }
+            public void setFrequency(double f) {frequency = f; }
 
-        public double getVolume() { return volume; }
-        public void setVolume(double v) {volume = v; }
+            public double getAmplitude() { return amplitude; }
+            public void setAmplitude(double a) {amplitude = a; }
 
-        public WaveShape getShape() { return shape; }
-        public void setShape(WaveShape s) {shape = s; }
+            public double getVolume() { return volume; }
+            public void setVolume(double v) {volume = v; }
 
-        public double getPulseDuty() {return pulseDuty;}
-        public void setPulseDuty(double d) {pulseDuty = Math.max(0.01, Math.min(0.99, d));}
+            public WaveShape getShape() { return shape; }
+            public void setShape(WaveShape s) {shape = s; }
+
+            public double getPulseDuty() {return pulseDuty;}
+            public void setPulseDuty(double d) {pulseDuty = Math.max(0.01, Math.min(0.99, d));}
+        }
+
+    static class ChannelPanel extends JPanel {
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setColor(Color.CYAN);
+            g2.fillRect(0,0, getWidth(), getHeight());
+        }
     }
+
+    static class WaveformPanel extends JPanel {
+        private byte[] samples;
+
+        public WaveformPanel(byte[] samples) {
+            this.samples = samples;
+        }
+
+        public void setSamples(byte[] samples) {
+            this.samples = samples;
+        }
+    
+
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setColor(Color.BLACK);
+            g2.fillRect(0,0, getWidth(), getHeight());
+
+            g2.setColor(Color.GREEN);
+            g2.setStroke(new BasicStroke(3));
+
+            if (samples == null || samples.length == 0) return;
+            
+            int mid = getHeight() / 5;
+            int width = getWidth();
+            int step = samples.length / getWidth();
+            
+
+            for (int i = 0; i < width -1; i++) {
+                int sample1 = samples[i * step];
+                int sample2 = samples[(i + 1) * step];
+
+                float scale = 0.5f; // 50% of the available vertical space
+                int y1 = mid - (int)(sample1 * mid / 128 * scale);
+                int y2 = mid - (int)(sample2 * mid / 128 * scale);
+
+                g.drawLine(i, y1, i+1, y2);
+            }
+        }
+    }
+
     public static void main(String[] args) throws Exception {
 
+        WaveformPanel[] waveformPanels = new WaveformPanel[] {
+            new WaveformPanel(new byte[0]),
+            new WaveformPanel(new byte[0])
+        };
 
-        int activeChannel = 0;
+        Channel[] channels = new Channel[2];
+        channels[0] = new Channel(waveformPanels[0]);
+        channels[1] = new Channel(waveformPanels[1]);
+    
+        final int[] activeChannel = {0} ;
 
         JFrame frame = new JFrame("Waveform Viewer");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -162,7 +212,7 @@ public class soundWave {
 
         JPanel channelSelectPanel1 = new JPanel();
         JButton channelButton1 = new JButton("1");
-        channelButton1.addActionListener(e -> activeChannel = 0);
+        channelButton1.addActionListener(e -> activeChannel[0] = 0);
         waveformPanels[0].setPreferredSize(new Dimension(725,150));
 
         //Channel 2
@@ -172,7 +222,7 @@ public class soundWave {
 
         JPanel channelSelectPanel2 = new JPanel();
         JButton channelButton2 = new JButton("2");
-        channelButton2.addActionListener(e -> activeChannel = 1);
+        channelButton2.addActionListener(e -> activeChannel[0] = 1);
         waveformPanels[1].setPreferredSize(new Dimension(725,150));
 
         //Adding channels to channel panel
@@ -215,7 +265,8 @@ public class soundWave {
         ampFreqPanel.add(freq2Button);
         ampFreqPanel.add(freq1Button);
 
-        controlContainer.add(ampFreqPanel, BorderLayout.WEST);
+        controlContainer.add(ampFreqPanel);
+
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new GridLayout(2,3,10,5));
 
@@ -240,53 +291,52 @@ public class soundWave {
         //Button functions
 
         playButton.addActionListener(e -> 
-            channels[activeChannel].start()
+            channels[activeChannel[0]].start()
         );
 
         stopButton.addActionListener(e ->
-            channels[activeChannel].stop()
+            channels[activeChannel[0]].stop()
         );
         
         squareWaveButton.addActionListener( e -> 
-            channels[activeChannel].getSettings().setShape(WaveSettings.WaveShape.SQUARE)
+            channels[activeChannel[0]].getSettings().setShape(WaveSettings.WaveShape.SQUARE)
         );
 
         pulseWaveButton.addActionListener( e -> 
-            channels[activeChannel].getSettings().setShape(WaveSettings.WaveShape.PULSE)
+            channels[activeChannel[0]].getSettings().setShape(WaveSettings.WaveShape.PULSE)
         
         );
 
         sawWaveButton.addActionListener( e -> 
-            channels[activeChannel].getSettings().setShape(WaveSettings.WaveShape.SAW)
+            channels[activeChannel[0]].getSettings().setShape(WaveSettings.WaveShape.SAW)
         );
 
         noiseWaveButton.addActionListener( e -> 
-            channels[activeChannel].getSettings().setShape(WaveSettings.WaveShape.NOISE)
+            channels[activeChannel[0]].getSettings().setShape(WaveSettings.WaveShape.NOISE)
         );
         freq1Button.addActionListener( e -> 
-            channels[activeChannel].getSettings().setFrequency(0.5)
+            channels[activeChannel[0]].getSettings().setFrequency(0.5)
         );
 
         freq2Button.addActionListener( e -> 
-            channels[activeChannel].getSettings().setFrequency(1)
+            channels[activeChannel[0]].getSettings().setFrequency(1)
         );
 
         freq3Button.addActionListener( e -> 
-            channels[activeChannel].getSettings().setFrequency(2)
+            channels[activeChannel[0]].getSettings().setFrequency(2)
         );
 
         amp1Button.addActionListener( e -> 
-            channels[activeChannel].getSettings().setAmplitude(0)
+            channels[activeChannel[0]].getSettings().setAmplitude(0)
         );
 
         amp2Button.addActionListener( e -> 
-            channels[activeChannel].getSettings().setAmplitude(0.5)
+            channels[activeChannel[0]].getSettings().setAmplitude(0.5)
         );
 
         amp3Button.addActionListener( e -> 
-            channels[activeChannel].getSettings().setAmplitude(1)
+            channels[activeChannel[0]].getSettings().setAmplitude(1)
         );
-
 
         frame.setVisible(true);
     }
@@ -300,57 +350,6 @@ public class soundWave {
         line.drain();
         line.stop();
         line.close();
-    }
-
-    static class ChannelPanel extends JPanel {
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g;
-            g2.setColor(Color.CYAN);
-            g2.fillRect(0,0, getWidth(), getHeight());
-        }
-    }
-
-
-    static class WaveformPanel extends JPanel {
-        private byte[] samples;
-
-        public WaveformPanel(byte[] samples) {
-            this.samples = samples;
-        }
-
-        public void setSamples(byte[] samples) {
-            this.samples = samples;
-        }
-    
-
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-
-            Graphics2D g2 = (Graphics2D) g;
-            g2.setColor(Color.BLACK);
-            g2.fillRect(0,0, getWidth(), getHeight());
-
-            g2.setColor(Color.GREEN);
-            g2.setStroke(new BasicStroke(3));
-
-            if (samples == null || samples.length == 0) return;
-            
-            int mid = getHeight() / 5;
-            int width = getWidth();
-            int step = samples.length / getWidth();
-            
-
-            for (int i = 0; i < width -1; i++) {
-                int sample1 = samples[i * step];
-                int sample2 = samples[(i + 1) * step];
-
-                float scale = 0.5f; // 50% of the available vertical space
-                int y1 = mid - (int)(sample1 * mid / 128 * scale);
-                int y2 = mid - (int)(sample2 * mid / 128 * scale);
-
-                g.drawLine(i, y1, i+1, y2);
-            }
-        }
     }
 }
 
