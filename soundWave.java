@@ -10,6 +10,7 @@ public class soundWave {
         private volatile boolean playing = false;
         private Thread audioThread;
 
+
         public Channel(WaveformPanel panel){
             this.panel = panel;
             this.settings = new WaveSettings();
@@ -187,21 +188,21 @@ public class soundWave {
         WaveformPanel[] waveformPanels = new WaveformPanel[] {
             new WaveformPanel(new byte[0]),
             new WaveformPanel(new byte[0]),
-            // new WaveformPanel(new byte[0]),
-            // new WaveformPanel(new byte[0])
+            new WaveformPanel(new byte[0]),
+            new WaveformPanel(new byte[0])
         };
 
         Channel[] channels = new Channel[4];
         channels[0] = new Channel(waveformPanels[0]);
         channels[1] = new Channel(waveformPanels[1]);
-        // channels[2] = new Channel(waveformPanels[2]);
-        // channels[3] = new Channel(waveformPanels[3]);
+        channels[2] = new Channel(waveformPanels[2]);
+        channels[3] = new Channel(waveformPanels[3]);
     
         final int[] activeChannel = {0} ;
 
         JFrame frame = new JFrame("Waveform Viewer");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800,300);
+        frame.setSize(800,625);
         frame.setLayout(new BorderLayout());
 
         //Channel container
@@ -230,23 +231,23 @@ public class soundWave {
         waveformPanels[1].setPreferredSize(new Dimension(725,150));
 
         //         //Channel 3
-        // JPanel channel3 = new JPanel();
-        // channel1.setPreferredSize(new Dimension(750,150));
+        JPanel channel3 = new JPanel();
+        channel1.setPreferredSize(new Dimension(750,150));
 
-        // JPanel channelSelectPanel3 = new JPanel();
-        // JButton channelButton3 = new JButton("3");
-        // channelButton1.addActionListener(e -> activeChannel[0] = 2);
-        // waveformPanels[0].setPreferredSize(new Dimension(725,150));
+        JPanel channelSelectPanel3 = new JPanel();
+        JButton channelButton3 = new JButton("3");
+        channelButton3.addActionListener(e -> activeChannel[0] = 2);
+        waveformPanels[2].setPreferredSize(new Dimension(725,150));
 
         // //Channel 4
 
-        // JPanel channel4 = new JPanel();
-        // channel2.setPreferredSize(new Dimension(750,150));
+        JPanel channel4 = new JPanel();
+        channel4.setPreferredSize(new Dimension(750,150));
 
-        // JPanel channelSelectPanel4 = new JPanel();
-        // JButton channelButton4 = new JButton("2");
-        // channelButton2.addActionListener(e -> activeChannel[0] = 3);
-        // waveformPanels[1].setPreferredSize(new Dimension(725,150));
+        JPanel channelSelectPanel4 = new JPanel();
+        JButton channelButton4 = new JButton("2");
+        channelButton4.addActionListener(e -> activeChannel[0] = 3);
+        waveformPanels[3].setPreferredSize(new Dimension(725,150));
 
         //Adding channels to channel panel
 
@@ -260,15 +261,15 @@ public class soundWave {
         channelSelectPanel2.add(channelButton2, BorderLayout.SOUTH);
         channelPanel.add(channel2);
 
-        // channel3.add(channelSelectPanel3, BorderLayout.LINE_START);
-        // channel3.add(waveformPanels[2], BorderLayout.CENTER);
-        // channelSelectPanel3.add(channelButton3, BorderLayout.SOUTH);
-        // channelPanel.add(channel3);
+        channel3.add(channelSelectPanel3, BorderLayout.LINE_START);
+        channel3.add(waveformPanels[2], BorderLayout.CENTER);
+        channelSelectPanel3.add(channelButton3, BorderLayout.SOUTH);
+        channelPanel.add(channel3);
 
-        // channel4.add(channelSelectPanel4, BorderLayout.LINE_START);
-        // channel4.add(waveformPanels[3], BorderLayout.CENTER);
-        // channelSelectPanel4.add(channelButton4, BorderLayout.SOUTH);
-        // channelPanel.add(channel4);
+        channel4.add(channelSelectPanel4, BorderLayout.LINE_START);
+        channel4.add(waveformPanels[3], BorderLayout.CENTER);
+        channelSelectPanel4.add(channelButton4, BorderLayout.SOUTH);
+        channelPanel.add(channel4);
 
         frame.add(channelPanel);
 
