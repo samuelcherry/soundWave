@@ -310,35 +310,29 @@ public class soundWave {
 
         //AMP and Freq
 
-        JPanel ampFreqPanel = new JPanel();
-        ampFreqPanel.setLayout(new GridLayout(3, 3, 10, 5));
+        JPanel controlPanel = new JPanel();
+        controlPanel.setLayout(new GridLayout(4, 6, 10, 5));
         
-        JButton amp3Button = new JButton("100");
-        JButton amp2Button = new JButton("50");
+        JButton amp6Button = new JButton("100");
+        JButton amp5Button = new JButton("85");
+        JButton amp4Button= new JButton("70");
+        JButton amp3Button = new JButton("55");
+        JButton amp2Button = new JButton("30");
         JButton amp1Button= new JButton("0");
-        JButton freq3Button = new JButton("2hz");
+
+        JButton freq1Button = new JButton("0.5hz");
         JButton freq2Button = new JButton("1hz");
-        JButton freq1Button= new JButton("0.5hz");
-        JButton bpm1Button = new JButton("40hz");
-        JButton bpm2Button = new JButton("60hz");
-        JButton bpm3Button = new JButton("200hz");
+        JButton freq3Button= new JButton("2hz");
+        JButton freq4Button = new JButton("40hz");
+        JButton freq5Button = new JButton("60hz");
+        JButton freq6Button= new JButton("200hz");
 
-        ampFreqPanel.add(amp3Button);
-        ampFreqPanel.add(amp2Button);
-        ampFreqPanel.add(amp1Button);
-        ampFreqPanel.add(freq3Button);
-        ampFreqPanel.add(freq2Button);
-        ampFreqPanel.add(freq1Button);
-        ampFreqPanel.add(bpm1Button);
-        ampFreqPanel.add(bpm2Button);
-        ampFreqPanel.add(bpm3Button);
-
-        controlContainer.add(ampFreqPanel);
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new GridLayout(3,3,10,5));
-
-        //Control buttons
+        JButton bpm1Button = new JButton("30bpm");
+        JButton bpm2Button = new JButton("60bpm");
+        JButton bpm3Button = new JButton("90bpm");
+        JButton bpm4Button = new JButton("120bpm");
+        JButton bpm5Button = new JButton("150bpm");
+        JButton bpm6Button = new JButton("180bpm");
 
         JButton playButton = new JButton("Play");
         JButton stopButton = new JButton("Stop");
@@ -346,19 +340,43 @@ public class soundWave {
         JButton pulseWaveButton = new JButton("Pulse Wave");
         JButton sawWaveButton = new JButton("Saw Wave");
         JButton noiseWaveButton = new JButton("Loop");
-        JButton bpm4Button = new JButton("120bpm");
-        JButton bpm5Button = new JButton("60bpm");
-        JButton bpm6Button = new JButton("180bpm");
 
-        buttonPanel.add(playButton);
-        buttonPanel.add(stopButton);
-        buttonPanel.add(squareWaveButton);
-        buttonPanel.add(pulseWaveButton);
-        buttonPanel.add(sawWaveButton);
-        buttonPanel.add(noiseWaveButton);
-        buttonPanel.add(bpm4Button);
-        buttonPanel.add(bpm5Button);
-        buttonPanel.add(bpm6Button);
+        controlPanel.add(amp1Button);
+        controlPanel.add(amp2Button);
+        controlPanel.add(amp3Button);
+        controlPanel.add(amp4Button);
+        controlPanel.add(amp5Button);
+        controlPanel.add(amp6Button);
+
+        controlPanel.add(freq1Button);
+        controlPanel.add(freq2Button);
+        controlPanel.add(freq3Button);
+        controlPanel.add(freq4Button);
+        controlPanel.add(freq5Button);
+        controlPanel.add(freq6Button);
+
+        controlPanel.add(bpm1Button);
+        controlPanel.add(bpm2Button);
+        controlPanel.add(bpm3Button);
+        controlPanel.add(bpm4Button);
+        controlPanel.add(bpm5Button);
+        controlPanel.add(bpm6Button);
+
+        controlPanel.add(playButton);
+        controlPanel.add(stopButton);
+        controlPanel.add(squareWaveButton);
+        controlPanel.add(pulseWaveButton);
+        controlPanel.add(sawWaveButton);
+        controlPanel.add(noiseWaveButton);
+
+        controlContainer.add(controlPanel);
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new GridLayout(3,3,10,5));
+
+        //Control buttons
+
+
 
         controlContainer.add(buttonPanel, BorderLayout.SOUTH);
 
