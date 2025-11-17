@@ -80,7 +80,7 @@ public class soundWave {
                         switch (shape) {
 
                             case SQUARE:
-                                sample = (byte)((Math.sin(angle) >= 0 ? 127:-128) * amplitude);
+                                sample = (byte)(Math.tanh(Math.sin(angle)*5) * 127 * amplitude);
                                 break;
   
 
@@ -396,60 +396,69 @@ public class soundWave {
 
         pulseWaveButton.addActionListener( e -> 
             channels[activeChannel[0]].getSettings().setShape(WaveSettings.WaveShape.PULSE)
-        
         );
 
         sawWaveButton.addActionListener( e -> 
             channels[activeChannel[0]].getSettings().setShape(WaveSettings.WaveShape.SAW)
         );
-
         noiseWaveButton.addActionListener( e -> 
             channels[activeChannel[0]].getSettings().setShape(WaveSettings.WaveShape.NOISE)
         );
+///FREQ buttons
         freq1Button.addActionListener( e -> 
-            channels[activeChannel[0]].getSettings().setFrequency(0.5)
+            channels[activeChannel[0]].getSettings().setFrequency(0.1)
         );
-
         freq2Button.addActionListener( e -> 
             channels[activeChannel[0]].getSettings().setFrequency(1)
         );
-
         freq3Button.addActionListener( e -> 
             channels[activeChannel[0]].getSettings().setFrequency(2)
         );
-
+        freq4Button.addActionListener( e -> 
+            channels[activeChannel[0]].getSettings().setFrequency(40)
+        );
+        freq5Button.addActionListener( e -> 
+            channels[activeChannel[0]].getSettings().setFrequency(60)
+        );
+        freq6Button.addActionListener( e -> 
+            channels[activeChannel[0]].getSettings().setFrequency(200)
+        );
+///AMP buttons
         amp1Button.addActionListener( e -> 
             channels[activeChannel[0]].getSettings().setAmplitude(0)
         );
-
         amp2Button.addActionListener( e -> 
-            channels[activeChannel[0]].getSettings().setAmplitude(0.5)
+            channels[activeChannel[0]].getSettings().setAmplitude(0.3)
         );
-
         amp3Button.addActionListener( e -> 
+            channels[activeChannel[0]].getSettings().setAmplitude(0.55)
+        );
+        amp4Button.addActionListener( e -> 
+            channels[activeChannel[0]].getSettings().setAmplitude(0.7)
+        );
+        amp5Button.addActionListener( e -> 
+            channels[activeChannel[0]].getSettings().setAmplitude(0.85)
+        );
+        amp6Button.addActionListener( e -> 
             channels[activeChannel[0]].getSettings().setAmplitude(1)
         );
+//BMP buttons 
 
         bpm1Button.addActionListener(e ->
-            channels[activeChannel[0]].getSettings().setFrequency(40)
+            channels[activeChannel[0]].getSettings().setBPM(30)
         );
-
         bpm2Button.addActionListener(e ->
-            channels[activeChannel[0]].getSettings().setFrequency(60)
+            channels[activeChannel[0]].getSettings().setBPM(60)
         );
-
         bpm3Button.addActionListener(e ->
-            channels[activeChannel[0]].getSettings().setFrequency(200)
+            channels[activeChannel[0]].getSettings().setBPM(90)
         );
-
         bpm4Button.addActionListener(e ->
             channels[activeChannel[0]].getSettings().setBPM(120)
         );
-
         bpm5Button.addActionListener(e ->
-            channels[activeChannel[0]].getSettings().setBPM(60)
+            channels[activeChannel[0]].getSettings().setBPM(150)
         );
-
         bpm6Button.addActionListener(e ->
             channels[activeChannel[0]].getSettings().setBPM(180)
         );
@@ -458,7 +467,7 @@ public class soundWave {
     }
 
     public static void play (byte[] audioData, float sampleRate) throws Exception {
-        AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
+        AudioFormat format = new AudioFormat(sampleRate, 128, 1, true, false);
         SourceDataLine line = AudioSystem.getSourceDataLine(format);
         line.open(format);
         line.start();
